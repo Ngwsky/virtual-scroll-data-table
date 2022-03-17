@@ -8,18 +8,30 @@
     <template v-slot:default>
       <thead ref="thead">
         <tr>
-          <th v-if="showSelect && !singleSelect" style="width: 1px; min-width: 1px;">
-            <slot name="header.data-table-select" v-bind:props="{ value: isSelectedAll, indeterminate: indeterminateSelectedAll }" v-bind:on="selectAll">
-              <v-simple-checkbox :value="isSelectedAll" :indeterminate="indeterminateSelectedAll" @input="selectAll" :ripple="false"></v-simple-checkbox>
-            </slot>
+          <th v-if="showSelect" style="width: 1px; min-width: 1px;">
+            <template v-if="!singleSelect">
+              <slot name="header.data-table-select" v-bind:props="{ value: isSelectedAll, indeterminate: indeterminateSelectedAll }" v-bind:on="selectAll">
+                <v-simple-checkbox :value="isSelectedAll" :indeterminate="indeterminateSelectedAll" @input="selectAll" :ripple="false"></v-simple-checkbox>
+              </slot>
+            </template>
           </th>
           <th v-for="(header, index) in headers"
             :key="index" @click="toggleSortOrder(index)" @mouseover="headerMouseOver(index)" @mouseleave="headerMouseLeave(index)"
             :class="[header.align ? 'text-' + header.align : 'text-start', header.class ? header.class : '']"
             :style="header.width ? (typeof header.width === 'string' ? 'width: ' + header.width + '; min-width: ' + header.width + ';' : 'width: ' + header.width + 'px; min-width:' + header.width + 'px;') : ''"
           ><slot :name="'header.' + header.value" v-bind:header="header">{{ header.text }}</slot>
+            <template v-if="header.filterable != null ? header.filterable : true">
+            <v-menu left offset-y :close-on-content-click="false" :dark="dark">
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon :color="0 < filterValues[index].length ? 'blue darken-4' : 'blue-grey lighten-2'" dense v-bind="attrs" v-on="on">{{ svgFilterVariant }}</v-icon>
+              </template>
+              <v-card outlined>
+                <v-autocomplete clearable deletable-chips multiple small-chips v-model="filterValues[index]" :items="filterSelectOptions[index]" dense class="mx-1" :dark="dark"></v-autocomplete>
+              </v-card>
+            </v-menu>
+            </template>
             <template v-if="header.sortable != null ? header.sortable : true">
-            <v-icon class="ml-2" :color="-1 < sortIdxs.findIndex(v => v === index) ? 'blue darken-4' : 'blue-grey lighten-2'" :style="-1 < sortIdxs.findIndex(v => v === index) || hoveredHeaderIdx === index ? 'visibility:visible;' : 'visibility:hidden;'">
+            <v-icon :color="-1 < sortIdxs.findIndex(v => v === index) ? 'blue darken-4' : 'blue-grey lighten-2'" :style="-1 < sortIdxs.findIndex(v => v === index) || hoveredHeaderIdx === index ? 'visibility:visible;' : 'visibility:hidden;'">
               <template v-if="-1 < sortIdxs.findIndex(v => v === index)">
                 <template v-if="sortOrders[sortIdxs.findIndex(v => v === index)] == -1">{{ svgChevronDown }}</template>
                 <template v-else-if="sortOrders[sortIdxs.findIndex(v => v === index)] == 1">{{ svgChevronUp }}</template>
@@ -27,16 +39,6 @@
               <template v-else>{{ svgChevronUp }}</template>
             </v-icon>
             <v-chip color="blue-grey lighten-4" small class="px-2" v-if="-1 < sortIdxs.findIndex(v => v === index)">{{ sortIdxs.findIndex(v => v === index) + 1 }}</v-chip>
-            </template>
-            <template v-if="header.filterable != null ? header.filterable : true">
-            <v-menu left offset-y :close-on-content-click="false" :dark="dark">
-              <template v-slot:activator="{ on, attrs }">
-                <v-icon class="float-right" :color="0 < filterValues[index].length ? 'blue darken-4' : 'blue-grey lighten-2'" dense v-bind="attrs" v-on="on">{{ svgFilterVariant }}</v-icon>
-              </template>
-              <v-card outlined>
-                <v-autocomplete clearable deletable-chips multiple small-chips v-model="filterValues[index]" :items="filterSelectOptions[index]" dense class="mx-1" :dark="dark"></v-autocomplete>
-              </v-card>
-            </v-menu>
             </template>
           </th>
         </tr>
