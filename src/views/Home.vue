@@ -1,5 +1,5 @@
 <template>
-   <v-container>
+   <v-container fluid>
       <v-slider
          v-model="slider"
          class="align-center"
@@ -32,6 +32,7 @@
          show-select
          multi-sort
          dense
+         class="vsdt"
       >
          <template v-slot:[`header.grade`]="{ header }">
             {{ header.text.toUpperCase() }}
@@ -65,42 +66,49 @@ export default {
                align: 'end',
                filterable: false,
                width: '80',
+               class: ['blue-grey', 'lighten-4'],
             },
             {
                text: 'Name',
                value: 'name',
                sortable: false,
                filterable: false,
+               class: ['blue-grey', 'lighten-4'],
             },
             {
                text: 'Type',
-               value: 'type'
+               value: 'type',
+               class: ['blue-grey', 'lighten-4'],
             },
             {
                text: 'Grade',
                value: 'grade',
                align: 'center',
-               class: 'rounded-xl',
+               class: ['blue-grey', 'lighten-4'],
                cellClass: 'rounded-xl',
-               width: '128pt',
+               width: '88pt',
             },
             {
                text: 'Value',
-               value: 'value'
+               value: 'value',
+               class: ['blue-grey', 'lighten-4'],
             },
             {
                text: '日本語',
-               value: 'valueJa'
+               value: 'valueJa',
+               class: ['blue-grey', 'lighten-4'],
             },
             {
                text: 'Date time',
                value: 'datetime',
                sort: (a, b) => Date.parse(a) - Date.parse(b),
+               class: ['blue-grey', 'lighten-4'],
             },
             {
                text: '価格',
                value: 'price',
                align: 'end',
+               class: ['blue-grey', 'lighten-4'],
             },
          ],
          items: [],
@@ -129,7 +137,7 @@ export default {
                type: this.types[Math.floor(Math.random() * this.types.length)],
                grade: this.grades[Math.floor(Math.random() * this.grades.length)],
                value: Math.floor(Math.random() * 999999),
-               valueJa: Array(2 + Math.floor(Math.random() * 5))
+               valueJa: Array(1 + Math.floor(Math.random() * 25))
                   .fill()
                   .map(() => {
                      let s = Math.floor(Math.random() * kana.length)
@@ -169,3 +177,9 @@ export default {
    }
 }
 </script>
+
+<style>
+.vsdt table thead tr th {
+  background-color: rgb(207, 216, 220) !important;
+}
+</style>

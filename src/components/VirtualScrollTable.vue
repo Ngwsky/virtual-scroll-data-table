@@ -4,6 +4,7 @@
     :dense="dense"
     :dark="dark"
     ref="vstable"
+    class="vsdt"
   >
     <template v-slot:default>
       <thead ref="thead">
@@ -19,27 +20,30 @@
             :key="index" @click="toggleSortOrder(index)" @mouseover="headerMouseOver(index)" @mouseleave="headerMouseLeave(index)"
             :class="[header.align ? 'text-' + header.align : 'text-start', header.class ? header.class : '']"
             :style="header.width ? (typeof header.width === 'string' ? 'width: ' + header.width + '; min-width: ' + header.width + ';' : 'width: ' + header.width + 'px; min-width:' + header.width + 'px;') : ''"
-          ><slot :name="'header.' + header.value" v-bind:header="header">{{ header.text }}</slot>
-            <template v-if="header.filterable != null ? header.filterable : true">
-            <v-menu left offset-y :close-on-content-click="false" :dark="dark">
-              <template v-slot:activator="{ on, attrs }">
-                <v-icon :color="0 < filterValues[index].length ? 'blue darken-4' : 'blue-grey lighten-2'" dense v-bind="attrs" v-on="on">{{ svgFilterVariant }}</v-icon>
+          >
+            <div style="min-width: max-content;">
+              <slot :name="'header.' + header.value" v-bind:header="header">{{ header.text }}</slot>
+              <template v-if="header.filterable != null ? header.filterable : true">
+                <v-menu left offset-y :close-on-content-click="false" :dark="dark">
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-icon :color="0 < filterValues[index].length ? 'blue darken-4' : 'blue-grey lighten-2'" dense v-bind="attrs" v-on="on">{{ svgFilterVariant }}</v-icon>
+                  </template>
+                  <v-card outlined>
+                    <v-autocomplete clearable deletable-chips multiple small-chips v-model="filterValues[index]" :items="filterSelectOptions[index]" dense class="mx-1" :dark="dark"></v-autocomplete>
+                  </v-card>
+                </v-menu>
               </template>
-              <v-card outlined>
-                <v-autocomplete clearable deletable-chips multiple small-chips v-model="filterValues[index]" :items="filterSelectOptions[index]" dense class="mx-1" :dark="dark"></v-autocomplete>
-              </v-card>
-            </v-menu>
-            </template>
-            <template v-if="header.sortable != null ? header.sortable : true">
-            <v-icon :color="-1 < sortIdxs.findIndex(v => v === index) ? 'blue darken-4' : 'blue-grey lighten-2'" :style="-1 < sortIdxs.findIndex(v => v === index) || hoveredHeaderIdx === index ? 'visibility:visible;' : 'visibility:hidden;'">
-              <template v-if="-1 < sortIdxs.findIndex(v => v === index)">
-                <template v-if="sortOrders[sortIdxs.findIndex(v => v === index)] == -1">{{ svgChevronDown }}</template>
-                <template v-else-if="sortOrders[sortIdxs.findIndex(v => v === index)] == 1">{{ svgChevronUp }}</template>
+              <template v-if="header.sortable != null ? header.sortable : true">
+                <v-icon :color="-1 < sortIdxs.findIndex(v => v === index) ? 'blue darken-4' : 'blue-grey lighten-2'" :style="-1 < sortIdxs.findIndex(v => v === index) || hoveredHeaderIdx === index ? 'visibility:visible;' : 'visibility:hidden;'">
+                  <template v-if="-1 < sortIdxs.findIndex(v => v === index)">
+                    <template v-if="sortOrders[sortIdxs.findIndex(v => v === index)] == -1">{{ svgChevronDown }}</template>
+                    <template v-else-if="sortOrders[sortIdxs.findIndex(v => v === index)] == 1">{{ svgChevronUp }}</template>
+                  </template>
+                  <template v-else>{{ svgChevronUp }}</template>
+                </v-icon>
+                <v-chip color="blue-grey lighten-4" small class="px-2" v-if="-1 < sortIdxs.findIndex(v => v === index)">{{ sortIdxs.findIndex(v => v === index) + 1 }}</v-chip>
               </template>
-              <template v-else>{{ svgChevronUp }}</template>
-            </v-icon>
-            <v-chip color="blue-grey lighten-4" small class="px-2" v-if="-1 < sortIdxs.findIndex(v => v === index)">{{ sortIdxs.findIndex(v => v === index) + 1 }}</v-chip>
-            </template>
+            </div>
           </th>
         </tr>
       </thead>
@@ -60,7 +64,9 @@
           <td v-for="(header, hidx) in headers"
             :class="[header.align ? 'text-' + header.align : 'text-start', header.cellClass ? header.cellClass : '']"
             :key="hidx">
-            <slot :name="'item.' + header.value" v-bind:item="vitem.item" v-bind:value="vitem.item[header.value]">{{ vitem.item[header.value] }}</slot>
+            <div style="min-width: max-content;">
+              <slot :name="'item.' + header.value" v-bind:item="vitem.item" v-bind:value="vitem.item[header.value]">{{ vitem.item[header.value] }}</slot>
+            </div>
           </td>
         </tr>
         <tr v-if="0 < paddingbottom">
@@ -137,6 +143,7 @@ export default {
     }
   },
   created() {
+    this.collator = this.locale ? new Intl.Collator(this.locale) : new Intl.Collator('ja');
     this.initItems(this.items);
   },
   mounted() {
@@ -157,8 +164,8 @@ export default {
       Object.freeze(this.refItems);
       this.filteredItems = this.refItems.slice();
       Object.freeze(this.filteredItems);
-      this.filterSelectOptions = this.headers.map((header, index) => Array.from(new Set(this.refItems.map(item => item[index]))));
       this.filterValues = this.headers.map(() => []);
+      this.refreshFilterSelections(this.filteredItems);
     },
     onScroll(e) {
       this.timeout && clearTimeout(this.timeout);
@@ -233,8 +240,20 @@ export default {
     },
     refreshFilterSelections(filteredItems){
       this.filterSelectOptions = this.headers.map((header, index) => {
-        if (this.filterValues[index] && 0 < this.filterValues[index].length) return this.filterSelectOptions[index];
-        return Array.from(new Set(filteredItems.map(filteredItem => filteredItem.item[this.headers[index].value])));
+        if (this.filterSelectOptions[index] && 0 < this.filterSelectOptions[index].length && this.filterValues[index] && 0 < this.filterValues[index].length) {
+          return this.filterSelectOptions[index];
+        } else {
+          return Array.from(new Set(filteredItems.map(filteredItem => filteredItem.item[header.value]))).sort((a, b) => {
+            const sortfunc = header.sort;
+            if (sortfunc) {
+              return sortfunc(a, b);
+            } else if (typeof a === 'string' && typeof b === 'string') {
+              return this.collator.compare(a, b);
+            } else {
+             if (a !== b) return a - b;
+            }
+          });
+        }
       });
     },
     refreshSelectAll(){
@@ -252,14 +271,14 @@ export default {
     },
     sort() {
       if (!this.sortIdxs || this.sortIdxs.length < 1 || this.sortOrders[0] === 0) return;
-      if (!this.collator) this.collator = this.locale ? new Intl.Collator(this.locale) : new Intl.Collator('ja');
       this.filteredItems = this.filteredItems.sort((a, b) => {
         for (let i = 0; i < this.sortIdxs.length; i++) {
-          let name = this.headers[this.sortIdxs[i]].value;
-          if (this.headers[this.sortIdxs[i]].sort) {
-            return this.headers[this.sortIdxs[i]].sort(a.item[name], b.item[name]) * this.sortOrders[i];
+          const name = this.headers[this.sortIdxs[i]].value;
+          const sortfunc = this.headers[this.sortIdxs[i]].sort;
+          if (sortfunc) {
+            return sortfunc(a.item[name], b.item[name]) * this.sortOrders[i];
           } else if (typeof a.item[name] === 'string' && typeof b.item[name] === 'string') {
-            let c = this.collator.compare(a.item[name], b.item[name]);
+            const c = this.collator.compare(a.item[name], b.item[name]);
             if (c !== 0) {
               return c * this.sortOrders[i];
             }
