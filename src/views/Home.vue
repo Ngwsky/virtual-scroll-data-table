@@ -18,10 +18,7 @@
             ></v-text-field>
          </template>
       </v-slider>
-      <v-switch
-        v-model="singleSelect"
-        label="Single select"
-      ></v-switch>
+      <v-switch v-model="singleSelect" label="Single select"></v-switch>
       <VirtualScrollTable
          v-model="selected"
          :height="480"
@@ -32,7 +29,6 @@
          show-select
          multi-sort
          dense
-         class="vsdt"
       >
          <template v-slot:[`header.grade`]="{ header }">
             {{ header.text.toUpperCase() }}
@@ -41,7 +37,25 @@
             <v-chip :color="getGradeColor(item.grade)">{{ item.grade }}</v-chip>
          </template>
          <template v-slot:[`item.price`]="{ value }">
-            {{ value.toLocaleString('ja', { "style":"currency", "currency":"JPY" }) }}
+            {{
+               value.toLocaleString('ja', {
+                  style: 'currency',
+                  currency: 'JPY'
+               })
+            }}
+         </template>
+         <template v-slot:[`item.valueJa`]="{ value }">
+            <template v-if="value && 25 < value.length">
+               <v-tooltip bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                     <span icon v-bind="attrs" v-on="on">
+                        {{ value.substring(0, 24) + '…' }}
+                     </span>
+                  </template>
+                  <span>{{ value }}</span>
+               </v-tooltip>
+            </template>
+            <template v-else>{{ value }}</template>
          </template>
       </VirtualScrollTable>
    </v-container>
@@ -65,51 +79,44 @@ export default {
                value: 'id',
                align: 'end',
                filterable: false,
-               width: '80',
-               class: ['blue-grey', 'lighten-4'],
+               width: '80'
             },
             {
                text: 'Name',
                value: 'name',
                sortable: false,
-               filterable: false,
-               class: ['blue-grey', 'lighten-4'],
+               filterable: false
             },
             {
                text: 'Type',
-               value: 'type',
-               class: ['blue-grey', 'lighten-4'],
+               value: 'type'
             },
             {
                text: 'Grade',
                value: 'grade',
                align: 'center',
-               class: ['blue-grey', 'lighten-4'],
+               class: 'rounded-xl',
                cellClass: 'rounded-xl',
-               width: '88pt',
+               width: '128pt'
             },
             {
                text: 'Value',
-               value: 'value',
-               class: ['blue-grey', 'lighten-4'],
+               value: 'value'
             },
             {
                text: '日本語',
-               value: 'valueJa',
-               class: ['blue-grey', 'lighten-4'],
+               value: 'valueJa'
             },
             {
                text: 'Date time',
                value: 'datetime',
-               sort: (a, b) => Date.parse(a) - Date.parse(b),
-               class: ['blue-grey', 'lighten-4'],
+               sort: (a, b) => Date.parse(a) - Date.parse(b)
             },
             {
                text: '価格',
                value: 'price',
-               align: 'end',
-               class: ['blue-grey', 'lighten-4'],
-            },
+               align: 'end'
+            }
          ],
          items: [],
          types: [
@@ -135,34 +142,59 @@ export default {
                id: i,
                name: Math.random().toString(36).slice(-8),
                type: this.types[Math.floor(Math.random() * this.types.length)],
-               grade: this.grades[Math.floor(Math.random() * this.grades.length)],
+               grade: this.grades[
+                  Math.floor(Math.random() * this.grades.length)
+               ],
                value: Math.floor(Math.random() * 999999),
-               valueJa: Array(1 + Math.floor(Math.random() * 25))
+               valueJa: Array(2 + Math.floor(Math.random() * 100))
                   .fill()
                   .map(() => {
                      let s = Math.floor(Math.random() * kana.length)
                      return kana.substring(s, s + 1)
                   })
                   .join(''),
-               datetime: new Intl.DateTimeFormat('en', { dateStyle: 'short', timeStyle: 'short' }).format(new Date((1577804400 + Math.floor(Math.random() * 200000000)) * 1000)),
-               price: Math.floor(Math.random() * 999 + 1) * 100,
-            });
+               datetime: new Intl.DateTimeFormat('en', {
+                  dateStyle: 'short',
+                  timeStyle: 'short'
+               }).format(
+                  new Date(
+                     (1577804400 + Math.floor(Math.random() * 200000000)) * 1000
+                  )
+               ),
+               price: Math.floor(Math.random() * 999 + 1) * 100
+            })
          }
          console.log('complete', (Date.now() - b) / 1000.0, 'sec')
          this.items = temp
       },
       getGradeColor(grade) {
-        let c0 = [102, 187, 106];
-        let c1 = [255, 238, 88];
-        let c2 = [239, 83, 80];
-        let i = this.grades.findIndex(g => g === grade);
-        let p = i / (this.grades.length - 1);
+         let c0 = [102, 187, 106]
+         let c1 = [255, 238, 88]
+         let c2 = [239, 83, 80]
+         let i = this.grades.findIndex((g) => g === grade)
+         let p = i / (this.grades.length - 1)
 
-        if (p < 0.5)
-          return 'rgb(' + Math.floor((c1[0] - c0[0]) * p + c0[0]) + ',' + Math.floor((c1[1] - c0[1]) * p + c0[1]) + ',' + Math.floor((c1[2] - c0[2]) * p + c0[2]) +')';
-        else
-          return 'rgb(' + Math.floor((c2[0] - c1[0]) * p + c1[0]) + ',' + Math.floor((c2[1] - c1[1]) * p + c1[1]) + ',' + Math.floor((c2[2] - c1[2]) * p + c1[2]) +')';
-      },
+         if (p < 0.5)
+            return (
+               'rgb(' +
+               Math.floor((c1[0] - c0[0]) * p + c0[0]) +
+               ',' +
+               Math.floor((c1[1] - c0[1]) * p + c0[1]) +
+               ',' +
+               Math.floor((c1[2] - c0[2]) * p + c0[2]) +
+               ')'
+            )
+         else
+            return (
+               'rgb(' +
+               Math.floor((c2[0] - c1[0]) * p + c1[0]) +
+               ',' +
+               Math.floor((c2[1] - c1[1]) * p + c1[1]) +
+               ',' +
+               Math.floor((c2[2] - c1[2]) * p + c1[2]) +
+               ')'
+            )
+      }
    },
    created() {
       this.refreshItems(this.slider)
