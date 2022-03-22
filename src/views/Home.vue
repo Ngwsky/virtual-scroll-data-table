@@ -22,7 +22,7 @@
       <VirtualScrollTable
          v-model="selected"
          :height="480"
-         :bench="0"
+         :bench="28"
          :headers="headers"
          :items="items"
          :single-select="singleSelect"
@@ -71,7 +71,7 @@ export default {
    },
    data() {
       return {
-         slider: 0,
+         slider: 20000,
          singleSelect: false,
          headers: [
             {

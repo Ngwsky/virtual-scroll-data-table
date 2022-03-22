@@ -247,12 +247,27 @@ export default {
       this.onScroll
     );
     this.$nextTick(() => {
-      this.headerHeight = this.$refs.thead.firstElementChild.getBoundingClientRect().height;
-      if (this.$refs.tbody.firstElementChild) this.rowHeight = this.$refs.tbody.firstElementChild.getBoundingClientRect().height;
-      this.scrollHeight = this.$refs.vstable.$el.childNodes[0].scrollHeight;
+      this.refreshSize();
     });
   },
   methods: {
+    refreshSize() {
+      if (this.$refs.thead.firstElementChild) {
+        const hh = this.$refs.thead.firstElementChild.getBoundingClientRect()
+          .height;
+        if (this.headerHeight !== hh) this.headerHeight = hh;
+      }
+      if (this.$refs.tbody.firstElementChild) {
+        const bh = this.$refs.tbody.firstElementChild.getBoundingClientRect()
+          .height;
+        if (this.rowHeight !== bh) this.rowHeight = bh;
+      }
+      if (this.$refs.vstable.$el.childNodes[0]) {
+        const sh = this.$refs.vstable.$el.childNodes[0].scrollHeight;
+        if (this.scrollHeight !== sh) this.scrollHeight = sh;
+      }
+      // console.log('refresh size', this.headerHeight, this.rowHeight, this.scrollHeight);
+    },
     initItems(items) {
       this.refItems = items.map((item, index) => {
         return {
@@ -266,11 +281,6 @@ export default {
       Object.freeze(this.filteredItems);
       this.filterValues = this.headers.map(() => []);
       this.refreshFilterSelections(this.filteredItems);
-      this.$nextTick(() => {
-        this.headerHeight = this.$refs.thead.firstElementChild.getBoundingClientRect().height;
-        if (this.$refs.tbody.firstElementChild) this.rowHeight = this.$refs.tbody.firstElementChild.getBoundingClientRect().height;
-        this.scrollHeight = this.$refs.vstable.$el.childNodes[0].scrollHeight;
-      });
     },
     onScroll(e) {
       this.timeout && clearTimeout(this.timeout);
@@ -385,7 +395,12 @@ export default {
       });
     },
     refreshSelectAll() {
-      if (this.singleSelect || !this.filteredItems || this.filteredItems.length < 1) return;
+      if (
+        this.singleSelect ||
+        !this.filteredItems ||
+        this.filteredItems.length < 1
+      )
+        return;
 
       let firstVal = this.filteredItems[0].isSelected;
 
@@ -485,7 +500,7 @@ export default {
   },
   computed: {
     rowsPerPage() {
-      return Math.ceil(this.height / this.rowHeight) - 1;
+      return Math.ceil((this.height - this.headerHeight) / this.rowHeight);
     },
     vitems() {
       /*
@@ -500,6 +515,17 @@ export default {
       /*
       console.log('vitems end', (Date.now() - s) / 1000.0, "sec");
       */
+
+      if (
+        this.start === 0 &&
+        this.filteredItems &&
+        0 < this.filteredItems.length
+      ) {
+        this.$nextTick(() => {
+          this.refreshSize();
+        });
+      }
+
       return r;
     },
     paddingtop() {
