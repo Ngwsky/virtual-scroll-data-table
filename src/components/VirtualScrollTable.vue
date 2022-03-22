@@ -1,5 +1,6 @@
 <template>
-  <v-simple-table fixed-header
+  <v-simple-table
+    fixed-header
     :height="height"
     :dense="dense"
     :dark="dark"
@@ -11,61 +12,176 @@
         <tr>
           <th v-if="showSelect" style="width: 1px; min-width: 1px;">
             <template v-if="!singleSelect">
-              <slot name="header.data-table-select" v-bind:props="{ value: isSelectedAll, indeterminate: indeterminateSelectedAll }" v-bind:on="selectAll">
-                <v-simple-checkbox :value="isSelectedAll" :indeterminate="indeterminateSelectedAll" @input="selectAll" :ripple="false"></v-simple-checkbox>
+              <slot
+                name="header.data-table-select"
+                v-bind:props="{
+                  value: isSelectedAll,
+                  indeterminate: indeterminateSelectedAll
+                }"
+                v-bind:on="selectAll"
+              >
+                <v-simple-checkbox
+                  :value="isSelectedAll"
+                  :indeterminate="indeterminateSelectedAll"
+                  @input="selectAll"
+                  :ripple="false"
+                ></v-simple-checkbox>
               </slot>
             </template>
           </th>
-          <th v-for="(header, index) in headers"
-            :key="index" @click="toggleSortOrder(index)" @mouseover="headerMouseOver(index)" @mouseleave="headerMouseLeave(index)"
-            :class="[header.align ? 'text-' + header.align : 'text-start', header.class ? header.class : '']"
-            :style="header.width ? (typeof header.width === 'string' ? 'width: ' + header.width + '; min-width: ' + header.width + ';' : 'width: ' + header.width + 'px; min-width:' + header.width + 'px;') : ''"
+          <th
+            v-for="(header, index) in headers"
+            :key="index"
+            @click="toggleSortOrder(index)"
+            @mouseover="headerMouseOver(index)"
+            @mouseleave="headerMouseLeave(index)"
+            :class="[
+              header.align ? 'text-' + header.align : 'text-start',
+              header.class ? header.class : ''
+            ]"
+            :style="
+              header.width
+                ? typeof header.width === 'string'
+                  ? 'width: ' +
+                    header.width +
+                    '; min-width: ' +
+                    header.width +
+                    ';'
+                  : 'width: ' +
+                    header.width +
+                    'px; min-width:' +
+                    header.width +
+                    'px;'
+                : ''
+            "
           >
             <div style="min-width: max-content;">
-              <slot :name="'header.' + header.value" v-bind:header="header">{{ header.text }}</slot>
-              <template v-if="header.filterable != null ? header.filterable : true">
-                <v-menu left offset-y :close-on-content-click="false" :dark="dark">
+              <slot :name="'header.' + header.value" v-bind:header="header">
+                {{ header.text }}
+              </slot>
+              <template
+                v-if="header.filterable != null ? header.filterable : true"
+              >
+                <v-menu
+                  left
+                  offset-y
+                  :close-on-content-click="false"
+                  :dark="dark"
+                >
                   <template v-slot:activator="{ on, attrs }">
-                    <v-icon :color="0 < filterValues[index].length ? 'blue darken-4' : 'blue-grey lighten-2'" dense v-bind="attrs" v-on="on">{{ svgFilterVariant }}</v-icon>
+                    <v-icon
+                      :color="
+                        0 < filterValues[index].length
+                          ? 'blue darken-4'
+                          : 'blue-grey lighten-2'
+                      "
+                      dense
+                      v-bind="attrs"
+                      v-on="on"
+                      @click.stop.prevent
+                    >
+                      {{ svgFilterVariant }}
+                    </v-icon>
                   </template>
                   <v-card outlined>
-                    <v-autocomplete clearable deletable-chips multiple small-chips v-model="filterValues[index]" :items="filterSelectOptions[index]" dense class="mx-1" :dark="dark"></v-autocomplete>
+                    <v-autocomplete
+                      clearable
+                      deletable-chips
+                      multiple
+                      small-chips
+                      v-model="filterValues[index]"
+                      :items="filterSelectOptions[index]"
+                      dense
+                      class="mx-1"
+                      :dark="dark"
+                      hide-details
+                    ></v-autocomplete>
                   </v-card>
                 </v-menu>
               </template>
               <template v-if="header.sortable != null ? header.sortable : true">
-                <v-icon :color="-1 < sortIdxs.findIndex(v => v === index) ? 'blue darken-4' : 'blue-grey lighten-2'" :style="-1 < sortIdxs.findIndex(v => v === index) || hoveredHeaderIdx === index ? 'visibility:visible;' : 'visibility:hidden;'">
+                <v-icon
+                  :color="
+                    -1 < sortIdxs.findIndex(v => v === index)
+                      ? 'blue darken-4'
+                      : 'blue-grey lighten-2'
+                  "
+                  :style="
+                    -1 < sortIdxs.findIndex(v => v === index) ||
+                    hoveredHeaderIdx === index
+                      ? 'visibility:visible;'
+                      : 'visibility:hidden;'
+                  "
+                >
                   <template v-if="-1 < sortIdxs.findIndex(v => v === index)">
-                    <template v-if="sortOrders[sortIdxs.findIndex(v => v === index)] == -1">{{ svgChevronDown }}</template>
-                    <template v-else-if="sortOrders[sortIdxs.findIndex(v => v === index)] == 1">{{ svgChevronUp }}</template>
+                    <template
+                      v-if="
+                        sortOrders[sortIdxs.findIndex(v => v === index)] == -1
+                      "
+                    >
+                      {{ svgArrowDown }}
+                    </template>
+                    <template
+                      v-else-if="
+                        sortOrders[sortIdxs.findIndex(v => v === index)] == 1
+                      "
+                    >
+                      {{ svgArrowUp }}
+                    </template>
                   </template>
-                  <template v-else>{{ svgChevronUp }}</template>
+                  <template v-else>{{ svgArrowUp }}</template>
                 </v-icon>
-                <v-chip color="blue-grey lighten-4" small class="px-2" v-if="-1 < sortIdxs.findIndex(v => v === index)">{{ sortIdxs.findIndex(v => v === index) + 1 }}</v-chip>
+                <v-chip
+                  color="blue-grey lighten-4"
+                  small
+                  class="px-2"
+                  v-if="-1 < sortIdxs.findIndex(v => v === index)"
+                >
+                  {{ sortIdxs.findIndex(v => v === index) + 1 }}
+                </v-chip>
               </template>
             </div>
           </th>
         </tr>
       </thead>
-      <tbody>
+      <tbody ref="tbody">
         <tr v-if="0 < paddingtop">
           <td
             :colspan="showSelect ? headers.length + 1 : headers.length"
-            :style="'padding-top:' + paddingtop + 'px'">
-          </td>
+            :style="'padding-top:' + paddingtop + 'px'"
+          ></td>
         </tr>
-        <tr v-for="(vitem, viidx) in vitems"
-          :key="viidx">
+        <tr v-for="(vitem, viidx) in vitems" :key="viidx">
           <td v-if="showSelect">
-            <slot name="item.data-table-select" v-bind:index="vitem.orgIndex" v-bind:item="vitem.item" v-bind:isSelected="vitem.isSelected">
-              <v-simple-checkbox :value="vitem.isSelected" @input="selectRow(viidx)" :ripple="false"></v-simple-checkbox>
+            <slot
+              name="item.data-table-select"
+              v-bind:index="vitem.orgIndex"
+              v-bind:item="vitem.item"
+              v-bind:isSelected="vitem.isSelected"
+            >
+              <v-simple-checkbox
+                :value="vitem.isSelected"
+                @input="selectRow(viidx)"
+                :ripple="false"
+              ></v-simple-checkbox>
             </slot>
           </td>
-          <td v-for="(header, hidx) in headers"
-            :class="[header.align ? 'text-' + header.align : 'text-start', header.cellClass ? header.cellClass : '']"
-            :key="hidx">
+          <td
+            v-for="(header, hidx) in headers"
+            :class="[
+              header.align ? 'text-' + header.align : 'text-start',
+              header.cellClass ? header.cellClass : ''
+            ]"
+            :key="hidx"
+          >
             <div style="min-width: max-content;">
-              <slot :name="'item.' + header.value" v-bind:item="vitem.item" v-bind:value="vitem.item[header.value]">{{ vitem.item[header.value] }}</slot>
+              <slot
+                :name="'item.' + header.value"
+                v-bind:item="vitem.item"
+                v-bind:value="vitem.item[header.value]"
+              >
+                {{ vitem.item[header.value] }}
+              </slot>
             </div>
           </td>
         </tr>
@@ -73,8 +189,7 @@
           <td
             :colspan="showSelect ? headers.length + 1 : headers.length"
             :style="'padding-bottom:' + paddingbottom + 'px'"
-          >
-          </td>
+          ></td>
         </tr>
       </tbody>
     </template>
@@ -82,54 +197,32 @@
 </template>
 
 <script>
-import { mdiFilterVariant, mdiChevronDown, mdiChevronUp, mdiSortVariant } from '@mdi/js';
-
 export default {
-  name: 'VirtualScrollTable',
+  name: "VirtualScrollTable",
   props: {
-    height: Number,
-    headers: Array,
-    items: Array,
-    bench: {
-      type: Number,
-      default: 0,
-    },
-    singleSelect: {
-      type: Boolean,
-      default: false,
-    },
-    showSelect: {
-      type: Boolean,
-      default: false,
-    },
-    multiSort: {
-      type: Boolean,
-      default: false,
-    },
-    locale: String,
-    dense: {
-      type: Boolean,
-      default: false,
-      required: false,
-    },
-    dark: {
-      type: Boolean,
-      default: false,
-      required: false,
-    },
-    value: Array,
+    height: { type: Number, default: 0 },
+    headers: { type: Array, default: () => [] },
+    items: { type: Array, default: () => [] },
+    bench: { type: Number, default: 0 },
+    singleSelect: { type: Boolean, default: false },
+    showSelect: { type: Boolean, default: false },
+    multiSort: { type: Boolean, default: false },
+    locale: { type: String, default: "" },
+    dense: { type: Boolean, default: false, required: false },
+    dark: { type: Boolean, default: false, required: false },
+    value: { type: Array, default: () => [] }
   },
-  data () {
+  data() {
     return {
       start: 0,
       timeout: null,
       headerHeight: 48,
       rowHeight: 48,
       scrollHeight: 0,
-      svgChevronDown: mdiChevronDown,
-      svgChevronUp: mdiChevronUp,
-      svgFilterVariant: mdiFilterVariant,
-      svgSortVariant : mdiSortVariant,
+      svgArrowDown: "mdi-arrow-down",
+      svgArrowUp: "mdi-arrow-up",
+      svgFilterVariant: "mdi-filter-variant",
+      svgSortVariant: "mdi-sort-variant",
       hoveredHeaderIdx: null,
       refItems: [],
       filteredItems: [],
@@ -139,18 +232,25 @@ export default {
       sortOrders: [],
       isSelectedAll: false,
       indeterminateSelectedAll: false,
-      collator: null,
-    }
+      collator: null
+    };
   },
   created() {
-    this.collator = this.locale ? new Intl.Collator(this.locale) : new Intl.Collator('ja');
+    this.collator = this.locale
+      ? new Intl.Collator(this.locale)
+      : new Intl.Collator("ja");
     this.initItems(this.items);
   },
   mounted() {
-    this.$refs.vstable.$el.childNodes[0].addEventListener("scroll", this.onScroll);
-    this.headerHeight = this.$refs.thead.getBoundingClientRect().height;
-    this.rowHeight = this.$refs.thead.getBoundingClientRect().height; // ホントならtbodyの一行から取得？でも一行の高さを固定にしないとおかしなことになるから、とりあえずはヘッダーの高さで。
-    this.scrollHeight = this.$refs.vstable.$el.childNodes[0].scrollHeight;
+    this.$refs.vstable.$el.childNodes[0].addEventListener(
+      "scroll",
+      this.onScroll
+    );
+    this.$nextTick(() => {
+      this.headerHeight = this.$refs.thead.firstElementChild.getBoundingClientRect().height;
+      if (this.$refs.tbody.firstElementChild) this.rowHeight = this.$refs.tbody.firstElementChild.getBoundingClientRect().height;
+      this.scrollHeight = this.$refs.vstable.$el.childNodes[0].scrollHeight;
+    });
   },
   methods: {
     initItems(items) {
@@ -158,36 +258,45 @@ export default {
         return {
           item: item,
           orgIndex: index,
-          isSelected: false,
-        }
+          isSelected: false
+        };
       });
       Object.freeze(this.refItems);
       this.filteredItems = this.refItems.slice();
       Object.freeze(this.filteredItems);
       this.filterValues = this.headers.map(() => []);
       this.refreshFilterSelections(this.filteredItems);
+      this.$nextTick(() => {
+        this.headerHeight = this.$refs.thead.firstElementChild.getBoundingClientRect().height;
+        if (this.$refs.tbody.firstElementChild) this.rowHeight = this.$refs.tbody.firstElementChild.getBoundingClientRect().height;
+        this.scrollHeight = this.$refs.vstable.$el.childNodes[0].scrollHeight;
+      });
     },
     onScroll(e) {
       this.timeout && clearTimeout(this.timeout);
       this.timeout = setTimeout(() => {
         const { scrollTop } = e.target;
-        let rows = Math.ceil((scrollTop - this.rowHeight) / this.rowHeight) - Math.floor(this.bench / 2);
+        let rows =
+          Math.ceil((scrollTop - this.headerHeight) / this.rowHeight) -
+          Math.floor(this.bench / 2);
         if (rows < 0) rows = 0;
-        this.start = rows + this.rowsPerPage > this.filteredItems.length ?
-          this.filteredItems.length - this.rowsPerPage: rows;
+        this.start =
+          rows + this.rowsPerPage > this.filteredItems.length
+            ? this.filteredItems.length - this.rowsPerPage
+            : rows;
         this.$nextTick(() => {
           e.target.scrollTop = scrollTop;
           this.scrollHeight = this.$refs.vstable.$el.childNodes[0].scrollHeight;
         });
       }, 2);
     },
-    headerMouseOver(index){
+    headerMouseOver(index) {
       this.hoveredHeaderIdx = index;
     },
-    headerMouseLeave(){
-      this.hoveredHeaderIdx = null;    
+    headerMouseLeave() {
+      this.hoveredHeaderIdx = null;
     },
-    toggleSortOrder(idx){
+    toggleSortOrder(idx) {
       if (this.headers[idx].sortable === false) return;
       if (this.multiSort) {
         let targetIdx = this.sortIdxs.findIndex(v => v === idx);
@@ -207,7 +316,11 @@ export default {
           }
         }
       } else {
-        if (this.sortIdxs && 0 < this.sortIdxs.length && this.sortIdxs[0] === idx) {
+        if (
+          this.sortIdxs &&
+          0 < this.sortIdxs.length &&
+          this.sortIdxs[0] === idx
+        ) {
           if (this.sortOrders[0] === -1) {
             this.sortIdxs = [];
             this.sortOrders = [];
@@ -225,11 +338,16 @@ export default {
       }
       this.sort();
     },
-    filter(vals){
+    filter(vals) {
       this.filteredItems = this.refItems.filter(refItem => {
         for (let i = 0; i < vals.length; i++) {
           if (vals[i] && 0 < vals[i].length) {
-            if (vals[i].findIndex(v => v === refItem.item[this.headers[i].value]) === -1) return false;
+            if (
+              vals[i].findIndex(
+                v => v === refItem.item[this.headers[i].value]
+              ) === -1
+            )
+              return false;
           }
         }
         return true;
@@ -238,29 +356,39 @@ export default {
       this.refreshFilterSelections(this.filteredItems);
       this.sort(this.sortOrders);
     },
-    refreshFilterSelections(filteredItems){
+    refreshFilterSelections(filteredItems) {
       this.filterSelectOptions = this.headers.map((header, index) => {
-        if (this.filterSelectOptions[index] && 0 < this.filterSelectOptions[index].length && this.filterValues[index] && 0 < this.filterValues[index].length) {
+        if (
+          this.filterSelectOptions[index] &&
+          0 < this.filterSelectOptions[index].length &&
+          this.filterValues[index] &&
+          0 < this.filterValues[index].length
+        ) {
           return this.filterSelectOptions[index];
         } else {
-          return Array.from(new Set(filteredItems.map(filteredItem => filteredItem.item[header.value]))).sort((a, b) => {
+          return Array.from(
+            new Set(
+              filteredItems.map(filteredItem => filteredItem.item[header.value])
+            )
+          ).sort((a, b) => {
             const sortfunc = header.sort;
             if (sortfunc) {
               return sortfunc(a, b);
-            } else if (typeof a === 'string' && typeof b === 'string') {
+            } else if (typeof a === "string" && typeof b === "string") {
               return this.collator.compare(a, b);
             } else {
-             if (a !== b) return a - b;
+              if (a !== b) return a - b;
             }
+            return 0;
           });
         }
       });
     },
-    refreshSelectAll(){
-      if (this.singleSelect) return;
+    refreshSelectAll() {
+      if (this.singleSelect || !this.filteredItems || this.filteredItems.length < 1) return;
 
       let firstVal = this.filteredItems[0].isSelected;
-      
+
       if (this.filteredItems.findIndex(v => v.isSelected !== firstVal) === -1) {
         this.isSelectedAll = firstVal;
         this.indeterminateSelectedAll = false;
@@ -270,26 +398,35 @@ export default {
       }
     },
     sort() {
-      if (!this.sortIdxs || this.sortIdxs.length < 1 || this.sortOrders[0] === 0) return;
+      if (
+        !this.sortIdxs ||
+        this.sortIdxs.length < 1 ||
+        this.sortOrders[0] === 0
+      )
+        return;
       this.filteredItems = this.filteredItems.sort((a, b) => {
         for (let i = 0; i < this.sortIdxs.length; i++) {
           const name = this.headers[this.sortIdxs[i]].value;
           const sortfunc = this.headers[this.sortIdxs[i]].sort;
           if (sortfunc) {
             return sortfunc(a.item[name], b.item[name]) * this.sortOrders[i];
-          } else if (typeof a.item[name] === 'string' && typeof b.item[name] === 'string') {
+          } else if (
+            typeof a.item[name] === "string" &&
+            typeof b.item[name] === "string"
+          ) {
             const c = this.collator.compare(a.item[name], b.item[name]);
             if (c !== 0) {
               return c * this.sortOrders[i];
             }
           } else {
-            if (a.item[name] !== b.item[name]) return (a.item[name] - b.item[name]) * this.sortOrders[i];
+            if (a.item[name] !== b.item[name])
+              return (a.item[name] - b.item[name]) * this.sortOrders[i];
           }
         }
         return 0;
       });
     },
-    selectAll(){
+    selectAll() {
       if (this.singleSelect) return;
 
       let newVal = this.indeterminateSelectedAll ? true : !this.isSelectedAll;
@@ -301,7 +438,10 @@ export default {
         filteredItem.isSelected = newVal;
         return filteredItem;
       });
-      this.$emit('input', this.items.filter((item, index) => this.refItems[index].isSelected));
+      this.$emit(
+        "input",
+        this.items.filter((item, index) => this.refItems[index].isSelected)
+      );
     },
     selectRow(vindex) {
       let targetOrgIndex = this.vitems[vindex].orgIndex;
@@ -311,10 +451,11 @@ export default {
           if (refItem.orgIndex !== targetOrgIndex) refItem.isSelected = false;
         });
         this.filteredItems.forEach(filteredItem => {
-          if (filteredItem.orgIndex !== targetOrgIndex) filteredItem.isSelected = false;
+          if (filteredItem.orgIndex !== targetOrgIndex)
+            filteredItem.isSelected = false;
         });
       }
-      
+
       let newVal = !this.refItems[targetOrgIndex].isSelected;
 
       this.refItems[targetOrgIndex].isSelected = newVal;
@@ -325,8 +466,11 @@ export default {
       }
 
       this.filteredItems.splice();
-      this.$emit('input', this.items.filter((item, index) => this.refItems[index].isSelected));
-    },
+      this.$emit(
+        "input",
+        this.items.filter((item, index) => this.refItems[index].isSelected)
+      );
+    }
   },
   watch: {
     items: function(value) {
@@ -337,30 +481,37 @@ export default {
     },
     filterValues: function(val) {
       this.filter(val);
-    },
+    }
   },
   computed: {
     rowsPerPage() {
-      return Math.floor(this.height / this.rowHeight) - 1;
+      return Math.ceil(this.height / this.rowHeight) - 1;
     },
     vitems() {
-/*
+      /*
       let s = Date.now();
       console.log('vitems start');
-*/
-      let r = this.filteredItems.slice(this.start, this.start + this.rowsPerPage + this.bench);
+      */
+      let r = this.filteredItems.slice(
+        this.start,
+        this.start + this.rowsPerPage + this.bench
+      );
       Object.freeze(r);
-/*
+      /*
       console.log('vitems end', (Date.now() - s) / 1000.0, "sec");
-*/
+      */
       return r;
     },
     paddingtop() {
       return this.start * this.rowHeight;
     },
     paddingbottom() {
-      return this.rowHeight * (this.filteredItems.length - (this.start + this.rowsPerPage + this.bench));
-    },
-  },
-}
+      return (
+        this.rowHeight *
+        (this.filteredItems.length -
+          (this.start + this.rowsPerPage + this.bench))
+      );
+    }
+  }
+};
 </script>

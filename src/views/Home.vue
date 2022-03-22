@@ -22,7 +22,7 @@
       <VirtualScrollTable
          v-model="selected"
          :height="480"
-         :bench="28"
+         :bench="0"
          :headers="headers"
          :items="items"
          :single-select="singleSelect"
@@ -71,7 +71,7 @@ export default {
    },
    data() {
       return {
-         slider: 10000,
+         slider: 0,
          singleSelect: false,
          headers: [
             {
@@ -209,9 +209,3 @@ export default {
    }
 }
 </script>
-
-<style>
-.vsdt table thead tr th {
-  background-color: rgb(207, 216, 220) !important;
-}
-</style>
