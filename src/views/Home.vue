@@ -1,10 +1,13 @@
 <template>
    <v-container fluid>
+      <v-switch v-model="$vuetify.theme.dark" label="Vuetify Theme Dark">
+      </v-switch>
       <v-slider
          v-model="slider"
          class="align-center"
          :max="100000"
          :min="0"
+         label="Number of rows"
          hide-details
       >
          <template v-slot:append>
@@ -18,17 +21,53 @@
             ></v-text-field>
          </template>
       </v-slider>
-      <v-switch v-model="singleSelect" label="Single select"></v-switch>
+      <v-row>
+         <v-col>
+            <v-slider
+               v-model="bench"
+               label="Bench"
+               class="align-center"
+               :max="99"
+               :min="0"
+               hide-details
+            >
+               <template v-slot:append>
+                  <v-text-field
+                     v-model="bench"
+                     class="mt-0 pt-0"
+                     hide-details
+                     single-line
+                     type="number"
+                     style="width: 60px"
+                  ></v-text-field>
+               </template>
+            </v-slider>
+         </v-col>
+         <v-col>
+            <v-switch v-model="singleSelect" label="Single select"></v-switch>
+         </v-col>
+         <v-col>
+            <v-switch v-model="dense" label="Dense"></v-switch>
+         </v-col>
+         <v-col>
+            <v-switch v-model="dark" label="Dark"></v-switch>
+         </v-col>
+         <v-col>
+            <v-switch v-model="light" label="Light"></v-switch>
+         </v-col>
+      </v-row>
       <VirtualScrollTable
          v-model="selected"
          :height="480"
-         :bench="28"
+         :bench="bench"
          :headers="headers"
          :items="items"
          :single-select="singleSelect"
          show-select
          multi-sort
-         dense
+         :dense="dense"
+         :dark="dark"
+         :light="light"
       >
          <template v-slot:[`header.grade`]="{ header }">
             {{ header.text.toUpperCase() }}
@@ -72,6 +111,10 @@ export default {
    data() {
       return {
          slider: 20000,
+         bench: 28,
+         dense: true,
+         dark: false,
+         light: false,
          singleSelect: false,
          headers: [
             {

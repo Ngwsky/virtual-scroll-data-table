@@ -2,8 +2,9 @@
   <v-simple-table
     fixed-header
     :height="height"
-    :dense="dense"
+    :light="light"
     :dark="dark"
+    :dense="dense"
     ref="vstable"
     class="vsdt"
   >
@@ -66,16 +67,13 @@
                   left
                   offset-y
                   :close-on-content-click="false"
+                  :light="light"
                   :dark="dark"
                 >
                   <template v-slot:activator="{ on, attrs }">
                     <v-icon
-                      :color="
-                        0 < filterValues[index].length
-                          ? 'blue darken-4'
-                          : 'blue-grey lighten-2'
-                      "
-                      dense
+                      :dense="dense"
+                      :class="{'text--primary': true, 'text--disabled': (!filterValues || !filterValues[index] || filterValues[index].length < 1)}"
                       v-bind="attrs"
                       v-on="on"
                       @click.stop.prevent
@@ -85,27 +83,24 @@
                   </template>
                   <v-card outlined>
                     <v-autocomplete
+                      :dense="dense"
                       clearable
                       deletable-chips
                       multiple
                       small-chips
                       v-model="filterValues[index]"
                       :items="filterSelectOptions[index]"
-                      dense
                       class="mx-1"
-                      :dark="dark"
                       hide-details
+                      :dark="dark"
                     ></v-autocomplete>
                   </v-card>
                 </v-menu>
               </template>
               <template v-if="header.sortable != null ? header.sortable : true">
                 <v-icon
-                  :color="
-                    -1 < sortIdxs.findIndex(v => v === index)
-                      ? 'blue darken-4'
-                      : 'blue-grey lighten-2'
-                  "
+                  :dense="dense"
+                  :class="{'text--primary': true, 'text--disabled': (-1 === sortIdxs.findIndex(v => v === index))}"
                   :style="
                     -1 < sortIdxs.findIndex(v => v === index) ||
                     hoveredHeaderIdx === index
@@ -132,10 +127,9 @@
                   <template v-else>{{ svgArrowUp }}</template>
                 </v-icon>
                 <v-chip
-                  color="blue-grey lighten-4"
-                  small
-                  class="px-2"
                   v-if="-1 < sortIdxs.findIndex(v => v === index)"
+                  class="px-2"
+                  small
                 >
                   {{ sortIdxs.findIndex(v => v === index) + 1 }}
                 </v-chip>
@@ -210,6 +204,7 @@ export default {
     locale: { type: String, default: "" },
     dense: { type: Boolean, default: false, required: false },
     dark: { type: Boolean, default: false, required: false },
+    light: { type: Boolean, default: false, required: false },
     value: { type: Array, default: () => [] }
   },
   data() {
@@ -252,21 +247,18 @@ export default {
   },
   methods: {
     refreshSize() {
+      if (!this.filteredItems || this.filteredItems.length < 1) return;
+      const bh = this.$refs.tbody.children[this.start === 0 ? 0 : 1].getBoundingClientRect().height;
+      if (this.rowHeight !== bh) this.rowHeight = bh;
       if (this.$refs.thead.firstElementChild) {
         const hh = this.$refs.thead.firstElementChild.getBoundingClientRect()
           .height;
         if (this.headerHeight !== hh) this.headerHeight = hh;
       }
-      if (this.$refs.tbody.firstElementChild) {
-        const bh = this.$refs.tbody.firstElementChild.getBoundingClientRect()
-          .height;
-        if (this.rowHeight !== bh) this.rowHeight = bh;
-      }
-      if (this.$refs.vstable.$el.childNodes[0]) {
-        const sh = this.$refs.vstable.$el.childNodes[0].scrollHeight;
+      if (this.$refs.vstable.$el.children[0]) {
+        const sh = this.$refs.vstable.$el.children[0].scrollHeight;
         if (this.scrollHeight !== sh) this.scrollHeight = sh;
       }
-      // console.log('refresh size', this.headerHeight, this.rowHeight, this.scrollHeight);
     },
     initItems(items) {
       this.refItems = items.map((item, index) => {
@@ -491,6 +483,11 @@ export default {
     items: function(value) {
       this.initItems(value);
     },
+    dense: function() {
+      this.$nextTick(() => {
+        this.refreshSize();
+      });
+    },
     locale: function(val) {
       this.collator = val ? new Intl.Collator(val) : new Intl.Collator();
     },
@@ -517,7 +514,6 @@ export default {
       */
 
       if (
-        this.start === 0 &&
         this.filteredItems &&
         0 < this.filteredItems.length
       ) {
@@ -541,3 +537,17 @@ export default {
   }
 };
 </script>
+
+<style lang="sass">
+@import '~vuetify/src/styles/styles.sass'
+
+.vsdt
+  .v-icon.theme--light.text--primary
+    color: map-get(map-get($material-light, 'text'), 'primary') !important
+  .v-icon.theme--dark.text--primary
+    color: map-get(map-get($material-dark, 'text'), 'primary') !important
+  .v-icon.theme--light.text--disabled
+    color: map-get(map-get($material-light, 'text'), 'disabled') !important
+  .v-icon.theme--dark.text--disabled
+    color: map-get(map-get($material-dark, 'text'), 'disabled') !important
+</style>
