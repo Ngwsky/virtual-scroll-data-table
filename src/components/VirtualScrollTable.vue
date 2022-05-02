@@ -168,7 +168,7 @@
             ]"
             :key="hidx"
           >
-            <div style="min-width: max-content;">
+            <div style="min-width: max-content; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
               <slot
                 :name="'item.' + header.value"
                 v-bind:item="vitem.item"

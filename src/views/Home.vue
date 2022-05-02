@@ -84,6 +84,7 @@
             }}
          </template>
          <template v-slot:[`item.valueJa`]="{ value }">
+<!-- 文字数オーバーで省略表記する場合
             <template v-if="value && 25 < value.length">
                <v-tooltip bottom>
                   <template v-slot:activator="{ on, attrs }">
@@ -95,6 +96,13 @@
                </v-tooltip>
             </template>
             <template v-else>{{ value }}</template>
+以下は幅で省略表記 -->
+           <v-tooltip bottom :open-on-click="false" :open-on-focus="false" :open-on-hover="true">
+             <template #activator="{ on, attrs }">
+               <span class="to-ellipsis" v-bind="attrs" @mouseenter="showElliptedTooltip($event, on.mouseenter)" v-on="{ ...on, ...{ mouseenter: () => true } }">{{ value }}</span>
+             </template>
+             <span>{{ value }}</span>
+           </v-tooltip>
          </template>
       </VirtualScrollTable>
    </v-container>
@@ -151,6 +159,11 @@ export default {
                value: 'valueJa'
             },
             {
+               text: '文字数',
+               value: 'valueJaLen',
+               align: 'end'
+            },
+            {
                text: 'Date time',
                value: 'datetime',
                sort: (a, b) => Date.parse(a) - Date.parse(b)
@@ -159,7 +172,7 @@ export default {
                text: '価格',
                value: 'price',
                align: 'end'
-            }
+            },
          ],
          items: [],
          types: [
@@ -170,7 +183,7 @@ export default {
             'Family mart'
          ],
          grades: ['A', 'B', 'C', 'D', 'E'],
-         selected: []
+         selected: [],
       }
    },
    methods: {
@@ -181,6 +194,13 @@ export default {
             'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわゐうゑをんアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヰウヱヲンがぎぐげござじずぜぞだぢづでどばびぶべぼヴガギグゲゴザジズゼゾダヂヅデドバビブベボぱぴぷぺぽパピプペポぁぃぅぇぉっゃゅょゎァィゥェォヵヶッャュョー'
          console.log('start generate data ...')
          for (let i = 1; i <= val; i++) {
+            const ja = Array(2 + Math.floor(Math.random() * 100))
+                  .fill()
+                  .map(() => {
+                     let s = Math.floor(Math.random() * kana.length)
+                     return kana.substring(s, s + 1)
+                  })
+                  .join('');
             temp.push({
                id: i,
                name: Math.random().toString(36).slice(-8),
@@ -189,13 +209,8 @@ export default {
                   Math.floor(Math.random() * this.grades.length)
                ],
                value: Math.floor(Math.random() * 999999),
-               valueJa: Array(2 + Math.floor(Math.random() * 100))
-                  .fill()
-                  .map(() => {
-                     let s = Math.floor(Math.random() * kana.length)
-                     return kana.substring(s, s + 1)
-                  })
-                  .join(''),
+               valueJa: ja,
+               valueJaLen: ja.length,
                datetime: new Intl.DateTimeFormat('en', {
                   dateStyle: 'short',
                   timeStyle: 'short'
@@ -237,7 +252,15 @@ export default {
                Math.floor((c2[2] - c1[2]) * p + c1[2]) +
                ')'
             )
-      }
+      },
+      isEllipted(element) {
+        if (!(element instanceof HTMLElement)) return null;
+        return element.offsetWidth < element.scrollWidth;
+      },
+      showElliptedTooltip(e, f) {
+        if (!e || !f) return;
+        if (this.isEllipted(e.target)) f(e);
+      },
    },
    created() {
       this.refreshItems(this.slider)
@@ -252,3 +275,13 @@ export default {
    }
 }
 </script>
+
+<style scoped>
+.to-ellipsis {
+  display: inline-block;
+  max-width: 800px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+</style>
