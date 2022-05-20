@@ -189,10 +189,8 @@ export default {
    methods: {
       refreshItems: function (val) {
          let temp = []
-         let b = Date.now()
          let kana =
             'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわゐうゑをんアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヰウヱヲンがぎぐげござじずぜぞだぢづでどばびぶべぼヴガギグゲゴザジズゼゾダヂヅデドバビブベボぱぴぷぺぽパピプペポぁぃぅぇぉっゃゅょゎァィゥェォヵヶッャュョー'
-         console.log('start generate data ...')
          for (let i = 1; i <= val; i++) {
             const ja = Array(2 + Math.floor(Math.random() * 100))
                   .fill()
@@ -222,7 +220,6 @@ export default {
                price: Math.floor(Math.random() * 999 + 1) * 100
             })
          }
-         console.log('complete', (Date.now() - b) / 1000.0, 'sec')
          this.items = temp
       },
       getGradeColor(grade) {
@@ -269,9 +266,6 @@ export default {
       slider: function (val) {
          this.refreshItems(val)
       },
-      selected: function (val) {
-         console.log('selected', val)
-      }
    }
 }
 </script>
