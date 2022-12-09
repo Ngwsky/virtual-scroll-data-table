@@ -700,7 +700,7 @@ export default {
     locale: function(val) {
       this.collator = val ? new Intl.Collator(val) : new Intl.Collator();
     },
-    filterValues: function(val) {
+    filterValues: function() {
       this.isFilterValuesChanged = true;
     },
   },
