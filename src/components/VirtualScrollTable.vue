@@ -69,37 +69,105 @@
                   :close-on-content-click="false"
                   :light="light"
                   :dark="dark"
+                  @input="filterInput($event, index)"
                 >
                   <template v-slot:activator="{ on, attrs }">
                     <v-icon
-                      :dense="dense"
-                      :class="{'text--primary': true, 'text--disabled': (!filterValues || !filterValues[index] || filterValues[index].length < 1)}"
+                      dense
+                      class="text--secondary"
                       v-bind="attrs"
                       v-on="on"
                       @click.stop.prevent
                     >
-                      {{ svgFilterVariant }}
+                      {{ filterValues[index].length > 0 ? svgFilter : svgFilterVariant }}
                     </v-icon>
                   </template>
                   <v-card outlined>
+                    <!--
+                    <v-expansion-panels
+                      multiple
+                      :value="[0]"
+                    >
+                      <v-expansion-panel>
+                        <v-expansion-panel-header class="text-caption">
+                          条件でフィルタ
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                          <v-row>
+                            <v-col>
+                              <v-select
+                                :items="conditions"
+                                label="条件"
+                                dense
+                              ></v-select>
+                            </v-col>
+                            <v-col>
+                              <v-text-field
+                                dense
+                                label="値"
+                              ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </v-expansion-panel-content>
+                      </v-expansion-panel>
+                      <v-expansion-panel>
+                        <v-expansion-panel-header class="text-caption">
+                          値でフィルタ
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                      -->
                     <v-autocomplete
-                      :dense="dense"
+                      dense
                       clearable
                       deletable-chips
                       multiple
                       small-chips
                       v-model="filterValues[index]"
                       :items="filterSelectOptions[index]"
+                      :search-input.sync="filterSelectSearchInput"
                       class="mx-1"
                       hide-details
                       :dark="dark"
-                    ></v-autocomplete>
+                      :no-data-text="noDataText"
+                    >
+                      <template v-slot:prepend-item>
+                        <v-list-item-group
+                          color="primary"
+                        >
+                          <v-list-item
+                            ripple
+                            :input-value="filterSelectOptions[index].length === filterValues[index].length"
+                            @click="filterSelectAllToggle(index)"
+                          >
+                            <v-list-item-action>
+                              <v-simple-checkbox
+                                color="primary"
+                                :value="isFilterSelectedAll(index)"
+                                :indeterminate="!isFilterSelectedAll(index) && 0 < filterValues[index].length && filterValues[index].length < filterSelectOptions[index].length"
+                                @click.stop.prevent="filterSelectAllToggle(index)"
+                              ></v-simple-checkbox>
+                            </v-list-item-action>
+                            <v-list-item-content>
+                              <v-list-item-title>
+                                {{ filterSelectSearchInput && filterSelectSearchInput.length > 0 ? '検索結果をすべて選択' : 'すべて選択' }}
+                              </v-list-item-title>
+                            </v-list-item-content>
+                          </v-list-item>
+                        </v-list-item-group>
+                        <v-divider></v-divider>
+                      </template>
+                    </v-autocomplete>
+                    <!--
+                          </v-expansion-panel-content>
+                      </v-expansion-panel>
+                    </v-expansion-panels>
+                    -->
                   </v-card>
                 </v-menu>
               </template>
               <template v-if="header.sortable != null ? header.sortable : true">
                 <v-icon
-                  :dense="dense"
+                  dense
                   :class="{'text--primary': true, 'text--disabled': (-1 === sortIdxs.findIndex(v => v === index))}"
                   :style="
                     -1 < sortIdxs.findIndex(v => v === index) ||
@@ -201,11 +269,12 @@ export default {
     singleSelect: { type: Boolean, default: false },
     showSelect: { type: Boolean, default: false },
     multiSort: { type: Boolean, default: false },
-    locale: { type: String, default: "" },
+    locale: { type: String, default: "ja-JP" },
+    noDataText: { type: String, default: "該当なし" },
     dense: { type: Boolean, default: false, required: false },
     dark: { type: Boolean, default: false, required: false },
     light: { type: Boolean, default: false, required: false },
-    value: { type: Array, default: () => [] }
+    value: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -218,16 +287,22 @@ export default {
       svgArrowUp: "mdi-arrow-up",
       svgFilterVariant: "mdi-filter-variant",
       svgSortVariant: "mdi-sort-variant",
+      svgFilter: "mdi-filter",
       hoveredHeaderIdx: null,
       refItems: [],
       filteredItems: [],
       filterSelectOptions: [],
       filterValues: [],
+      isFilterValuesChanged: false,
+      filterOpenIndex: undefined,
+      filterSelectSearchInput: '',
       sortIdxs: [],
       sortOrders: [],
+      filterAndSortedItems: [],
       isSelectedAll: false,
       indeterminateSelectedAll: false,
-      collator: null
+      collator: null,
+      conditions: ['=', '≠', '<', '≦', '>', '≧'],
     };
   },
   created() {
@@ -247,7 +322,7 @@ export default {
   },
   methods: {
     refreshSize() {
-      if (!this.filteredItems || this.filteredItems.length < 1) return;
+      if (!this.filteredItems || this.filteredItems.length < 1 || !this.$refs.tbody.children[this.start === 0 ? 0 : 1]) return;
       const bh = this.$refs.tbody.children[this.start === 0 ? 0 : 1].getBoundingClientRect().height;
       if (this.rowHeight !== bh) this.rowHeight = bh;
       if (this.$refs.thead.firstElementChild) {
@@ -271,6 +346,8 @@ export default {
       Object.freeze(this.refItems);
       this.filteredItems = this.refItems.slice();
       Object.freeze(this.filteredItems);
+      this.filterAndSortedItems = this.refItems.slice();
+      Object.freeze(this.filterAndSortedItems);
       this.filterValues = this.headers.map(() => []);
       this.refreshFilterSelections(this.filteredItems);
     },
@@ -309,10 +386,13 @@ export default {
           if (this.sortOrders[targetIdx] === -1) {
             this.sortIdxs.splice(targetIdx, 1);
             this.sortOrders.splice(targetIdx, 1);
+            /*
             if (this.sortIdxs.length === 0) {
-              this.filter(this.filterValues);
+              // swap vitem sorted filtered items to filterd items(non sorted)
+              // this.filter(this.filterValues);
               return;
             }
+            */
           } else if (this.sortOrders[targetIdx] === 1) {
             this.sortOrders[targetIdx] = -1;
           }
@@ -326,8 +406,9 @@ export default {
           if (this.sortOrders[0] === -1) {
             this.sortIdxs = [];
             this.sortOrders = [];
-            this.filter(this.filterValues);
-            return;
+            // swap vitem sorted filtered items to filterd items(non sorted)
+            // this.filter(this.filterValues);
+            // return;
           } else if (this.sortOrders[0] === 1) {
             this.sortOrders = [-1];
           } else {
@@ -341,15 +422,60 @@ export default {
       this.sort();
     },
     filter(vals) {
-      this.filteredItems = this.refItems.filter(refItem => {
+      console.debug('filter', vals);
+      this.filteredItems = this.refItems.filter(srcItem => {
         for (let i = 0; i < vals.length; i++) {
           if (vals[i] && 0 < vals[i].length) {
+            const h = this.headers[i];
+            const itemVal = srcItem.item[h.value];
             if (
               vals[i].findIndex(
-                v => v === refItem.item[this.headers[i].value]
+                v => typeof v === 'object' && 'value' in v ? v.value === itemVal : v === itemVal
               ) === -1
-            )
+            ) {
               return false;
+/* Implementation for filtering with combo-box instead of auto-complete
+              if (typeof itemVal === 'string' || itemVal instanceof String) {
+                if (
+                  vals[i].findIndex(
+                    v => typeof v === 'string' && -1 !== itemVal.indexOf(v)
+                  ) === -1
+                ) {
+                  return false;
+                }
+              } else if (typeof itemVal === 'object' && Object.prototype.toString.call(itemVal) === '[object Date]') {
+                if (vals[i].findIndex(
+                  v => {
+                    if (typeof v.value === 'object' && Object.prototype.toString.call(v.value) === '[object Date]') {
+                      return itemVal.getTime() === v.value.getTime();
+                    } else if (typeof v === 'string' || v instanceof String) {
+                      let str = itemVal.toString();
+                      if (h.filterTextFromatter && typeof h.filterTextFromatter === 'function') {
+                        str = h.filterTextFromatter(itemVal);
+                      }
+                      return str.indexOf(v) !== -1;
+                    } else {
+                      return false;
+                    }
+                  }
+                ) === -1) {
+                  return false;
+                }
+              } else {
+                return vals[i].findIndex(v => {
+                  if (typeof v === 'string' || v instanceof String) {
+                    let str = itemVal.toString();
+                    if (h.filterTextFromatter && typeof h.filterTextFromatter === 'function') {
+                      str = h.filterTextFromatter(itemVal);
+                    }
+                    return str.indexOf(v) !== -1;
+                  } else {
+                    return false;
+                  }
+                }) !== -1;
+              }
+*/
+            }
           }
         }
         return true;
@@ -357,6 +483,26 @@ export default {
       this.refreshSelectAll(this.filteredItems);
       this.refreshFilterSelections(this.filteredItems);
       this.sort(this.sortOrders);
+    },
+    uniqueArray(array) {
+      if (!array || !Array.isArray(array)) return [];
+      let ret = [...new Set(array)];
+      if (ret.some(v => typeof v === 'object')) {
+        return ret.filter((v, i, self) => {
+          if (Object.prototype.toString.call(v) === '[object Date]') {
+            return self.findIndex(d => {
+              if (Object.prototype.toString.call(d) === '[object Date]') {
+                return d.getTime() === v.getTime();
+              } else {
+                return false;
+              }
+            }) === i;
+          } else {
+            return true;
+          }
+        });
+      }
+      return ret;
     },
     refreshFilterSelections(filteredItems) {
       this.filterSelectOptions = this.headers.map((header, index) => {
@@ -368,21 +514,34 @@ export default {
         ) {
           return this.filterSelectOptions[index];
         } else {
-          return Array.from(
-            new Set(
-              filteredItems.map(filteredItem => filteredItem.item[header.value])
-            )
+          const vals = this.uniqueArray(
+            filteredItems.map(filteredItem => filteredItem.item[header.value])
           ).sort((a, b) => {
             const sortfunc = header.sort;
             if (sortfunc) {
               return sortfunc(a, b);
-            } else if (typeof a === "string" && typeof b === "string") {
+            } else if (typeof a === 'string' && typeof b === 'string') {
               return this.collator.compare(a, b);
             } else {
               if (a !== b) return a - b;
             }
             return 0;
           });
+          if (header.filterTextFromatter && typeof header.filterTextFromatter === 'function') {
+            return vals.map(v => {
+              return {
+                value: v,
+                text: header.filterTextFromatter(v),
+              };
+            });
+          } else {
+            return vals.map(v => {
+              return {
+                value: v,
+                text: typeof v === 'string' ? v : (v?.toLocaleString(this.locale) || ''),
+              };
+            });
+          }
         }
       });
     },
@@ -405,13 +564,17 @@ export default {
       }
     },
     sort() {
+      console.debug('sort', this.sortIdxs, this.sortOrders);
       if (
         !this.sortIdxs ||
         this.sortIdxs.length < 1 ||
         this.sortOrders[0] === 0
-      )
+      ) {
+        this.filterAndSortedItems = this.filteredItems.slice();
         return;
-      this.filteredItems = this.filteredItems.sort((a, b) => {
+      }
+
+      this.filterAndSortedItems = this.filteredItems.slice().sort((a, b) => {
         for (let i = 0; i < this.sortIdxs.length; i++) {
           const name = this.headers[this.sortIdxs[i]].value;
           const sortfunc = this.headers[this.sortIdxs[i]].sort;
@@ -426,8 +589,9 @@ export default {
               return c * this.sortOrders[i];
             }
           } else {
-            if (a.item[name] !== b.item[name])
-              return (a.item[name] - b.item[name]) * this.sortOrders[i];
+            const c = a.item[name] - b.item[name]
+            if (c !== 0)
+              return c * this.sortOrders[i];
           }
         }
         return 0;
@@ -477,7 +641,52 @@ export default {
         "input",
         this.items.filter((item, index) => this.refItems[index].isSelected)
       );
-    }
+    },
+    filterInput(input, index) {
+      console.debug('filterInput', input, index);
+      this.filterOpenIndex = index;
+      if (input) {
+        this.isFilterValuesChanged = false;
+        this.filterSelectSearchInput = '';
+      } else {
+        if (this.isFilterValuesChanged) this.filter(this.filterValues);
+      }
+    },
+    isFilterSelectedAll(index) {
+      if (this.filterOpenIndex !== index) return false;
+
+      const q = this.filterSelectSearchInput;
+
+      if (q && 0 < q.length) {
+        const visibleOptions = this.filterSelectOptions[index].filter(v => v.text.toLocaleLowerCase().indexOf(q.toLocaleLowerCase()) > -1);
+        return visibleOptions.length <= this.filterValues[index].length
+          && this.filterValues[index].filter(v => visibleOptions.some(o => o.text === v)).length === visibleOptions.length;
+      } else {
+        return this.filterSelectOptions[index].length === this.filterValues[index].length;
+      }
+    },
+    filterSelectAllToggle(index) {
+      const q = this.filterSelectSearchInput;
+
+      if (q && 0 < q.length) {
+        const visibleOptions = this.filterSelectOptions[index].filter(v => v.text.toLocaleLowerCase().indexOf(q.toLocaleLowerCase()) > -1);
+
+        if (visibleOptions.length <= this.filterValues[index].length
+          && this.filterValues[index].filter(v => visibleOptions.some(o => o.text === v)).length === visibleOptions.length) {
+          this.filterValues[index] = this.filterValues[index].filter(v => !visibleOptions.some(o => o.text === v));
+        } else {
+          this.filterValues[index] = visibleOptions.map(v => v.value);
+        }
+      } else {
+        if (this.filterSelectOptions[index].length === this.filterValues[index].length) {
+          this.filterValues[index] = [];
+        } else {
+          this.filterValues[index] = this.filterSelectOptions[index].map(v => v.value);
+        }
+      }
+
+      this.filterValues.splice();
+    },
   },
   watch: {
     items: function(value) {
@@ -492,8 +701,8 @@ export default {
       this.collator = val ? new Intl.Collator(val) : new Intl.Collator();
     },
     filterValues: function(val) {
-      this.filter(val);
-    }
+      this.isFilterValuesChanged = true;
+    },
   },
   computed: {
     rowsPerPage() {
@@ -504,7 +713,7 @@ export default {
       let s = Date.now();
       console.log('vitems start');
       */
-      let r = this.filteredItems.slice(
+      let r = this.filterAndSortedItems.slice(
         this.start,
         this.start + this.rowsPerPage + this.bench
       );
@@ -514,8 +723,8 @@ export default {
       */
 
       if (
-        this.filteredItems &&
-        0 < this.filteredItems.length
+        this.filterAndSortedItems &&
+        0 < this.filterAndSortedItems.length
       ) {
         this.$nextTick(() => {
           this.refreshSize();
